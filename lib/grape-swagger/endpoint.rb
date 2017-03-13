@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'active_support'
 require 'active_support/core_ext/string/inflections.rb'
 
@@ -35,14 +36,18 @@ module Grape
 
     # building info object
     def info_object(infos)
-      {
+      result = {
         title:             infos[:title] || 'API title',
         description:       infos[:description],
         termsOfServiceUrl: infos[:terms_of_service_url],
         contact:           contact_object(infos),
         license:           license_object(infos),
         version:           infos[:version]
-      }.delete_if { |_, value| value.blank? }
+      }
+
+      GrapeSwagger::DocMethods::Extensions.add_extensions_to_info(infos, result)
+
+      result.delete_if { |_, value| value.blank? }
     end
 
     # sub-objects of info object
@@ -108,10 +113,10 @@ module Grape
       method[:description] = description_object(route)
       method[:produces]    = produces_object(route, options[:produces] || options[:format])
       method[:consumes]    = consumes_object(route, options[:format])
-      method[:parameters]  = params_object(route)
+      method[:parameters]  = params_object(route, path)
       method[:security]    = security_object(route)
       method[:responses]   = response_object(route)
-      method[:tags]        = route.options.fetch(:tags, tag_object(route))
+      method[:tags]        = route.options.fetch(:tags, tag_object(route, path))
       method[:operationId] = GrapeSwagger::DocMethods::OperationId.build(route, path)
       method.delete_if { |_, value| value.blank? }
 
@@ -138,6 +143,9 @@ module Grape
     end
 
     def produces_object(route, format)
+      return ['application/octet-stream'] if file_response?(route.attributes.success) &&
+                                             !route.attributes.produces.present?
+
       mime_types = GrapeSwagger::DocMethods::ProducesConsumes.call(format)
 
       route_mime_types = [:formats, :content_types, :produces].map do |producer|
@@ -158,7 +166,7 @@ module Grape
       mime_types
     end
 
-    def params_object(route)
+    def params_object(route, path)
       parameters = partition_params(route).map do |param, value|
         value = { required: false }.merge(value) if value.is_a?(Hash)
         _, value = default_type([[param, value]]).first if value == ''
@@ -167,11 +175,11 @@ module Grape
         elsif value[:documentation]
           expose_params(value[:documentation][:type])
         end
-        GrapeSwagger::DocMethods::ParseParams.call(param, value, route, @definitions)
+        GrapeSwagger::DocMethods::ParseParams.call(param, value, path, route, @definitions)
       end
 
       if GrapeSwagger::DocMethods::MoveParams.can_be_moved?(parameters, route.request_method)
-        parameters = GrapeSwagger::DocMethods::MoveParams.to_definition(parameters, route, @definitions)
+        parameters = GrapeSwagger::DocMethods::MoveParams.to_definition(path, parameters, route, @definitions)
       end
 
       parameters
@@ -185,13 +193,14 @@ module Grape
 
       codes.each_with_object({}) do |value, memo|
         memo[value[:code]] = { description: value[:message] }
+        next build_file_response(memo[value[:code]]) if file_response?(value[:model])
 
         response_model = @item
         response_model = expose_params_from_model(value[:model]) if value[:model]
 
-        if memo.key?(200) && route.request_method == 'DELETE' && value[:model].nil?
-          memo[204] = memo.delete(200)
-          value[:code] = 204
+        if route.request_method == 'DELETE' && !value[:model].nil?
+          memo[200] = memo.delete(204)
+          value[:code] = 200
         end
 
         next if memo.key?(204)
@@ -201,7 +210,7 @@ module Grape
         # TODO: proof that the definition exist, if model isn't specified
         reference = { '$ref' => "#/definitions/#{response_model}" }
         memo[value[:code]][:schema] = if route.options[:is_array] && value[:code] < 300
-                                        { 'type' => 'array', 'items' => reference }
+                                        { type: 'array', items: reference }
                                       else
                                         reference
                                       end
@@ -223,17 +232,25 @@ module Grape
       [default_code]
     end
 
-    def tag_object(route)
+    def tag_object(route, path)
       version = GrapeSwagger::DocMethods::Version.get(route)
       version = [version] unless version.is_a?(Array)
       Array(
-        route.path.split('{')[0].split('/').reject(&:empty?).delete_if do |i|
+        path.split('{')[0].split('/').reject(&:empty?).delete_if do |i|
           i == route.prefix.to_s || version.map(&:to_s).include?(i)
         end.first
       )
     end
 
     private
+
+    def file_response?(value)
+      value.to_s.casecmp('file').zero? ? true : false
+    end
+
+    def build_file_response(memo)
+      memo['schema'] = { type: 'file' }
+    end
 
     def partition_params(route)
       declared_params = route.settings[:declared_params] if route.settings[:declared_params].present?

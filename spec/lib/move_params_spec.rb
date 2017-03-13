@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'spec_helper'
 
 describe GrapeSwagger::DocMethods::MoveParams do
@@ -91,18 +92,19 @@ describe GrapeSwagger::DocMethods::MoveParams do
   end
 
   describe 'parent_definition_of_params' do
+    let(:path) { '/in_body' }
     describe 'POST' do
-      let(:params) { paths['/in_body'][:post][:parameters] }
+      let(:params) { paths[path][:post][:parameters] }
       let(:options)  do
         {
           method: 'POST'
         }
       end
-      let(:env) { Rack::MockRequest.env_for('/in_body', options) }
+      let(:env) { Rack::MockRequest.env_for(path, options) }
       let(:request) { Grape::Request.new(env) }
 
       specify do
-        subject.to_definition(params, request, definitions)
+        subject.to_definition(path, params, request, definitions)
         expect(params).to eql(
           [
             { name: 'InBody', in: 'body', required: true, schema: { '$ref' => '#/definitions/postInBody' } }
@@ -120,11 +122,11 @@ describe GrapeSwagger::DocMethods::MoveParams do
           method: 'PUT'
         }
       end
-      let(:env) { Rack::MockRequest.env_for('/in_body', options) }
+      let(:env) { Rack::MockRequest.env_for(path, options) }
       let(:request) { Grape::Request.new(env) }
 
       specify do
-        subject.to_definition(params, request, definitions)
+        subject.to_definition(path, params, request, definitions)
         expect(params).to eql(
           [
             { in: 'path', name: 'key', description: nil, type: 'integer', format: 'int32', required: true },

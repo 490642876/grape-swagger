@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'spec_helper'
 
 describe GrapeSwagger::DocMethods::TagNameDescription do
@@ -15,11 +16,12 @@ describe GrapeSwagger::DocMethods::TagNameDescription do
   end
 
   describe '#build' do
-    subject { described_class.build(paths) }
+    let(:object) { described_class.build(paths) }
+
     describe 'empty paths' do
       let(:paths) { {} }
       specify do
-        expect(subject).to eql([])
+        expect(object).to eql([])
       end
     end
 
@@ -30,7 +32,7 @@ describe GrapeSwagger::DocMethods::TagNameDescription do
         end
 
         specify do
-          expect(subject).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
+          expect(object).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
         end
       end
 
@@ -40,7 +42,7 @@ describe GrapeSwagger::DocMethods::TagNameDescription do
         end
 
         specify do
-          expect(subject).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
+          expect(object).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
         end
       end
 
@@ -53,7 +55,7 @@ describe GrapeSwagger::DocMethods::TagNameDescription do
           end
 
           specify do
-            expect(subject).to eql [
+            expect(object).to eql [
               { name: 'tags_given', description: 'Operations about tags_givens' },
               { name: 'another_tag_given', description: 'Operations about another_tag_givens' }
             ]
@@ -68,7 +70,7 @@ describe GrapeSwagger::DocMethods::TagNameDescription do
           end
 
           specify do
-            expect(subject).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
+            expect(object).to eql [{ name: 'tags_given', description: 'Operations about tags_givens' }]
           end
         end
       end

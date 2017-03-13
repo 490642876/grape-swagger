@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'spec_helper'
 # require 'grape_version'
 
@@ -98,7 +99,10 @@ describe 'Default API' do
           license: 'Apache 2',
           license_url: 'http://test.com',
           terms_of_service_url: 'http://terms.com',
-          contact_email: 'support@test.com'
+          contact_email: 'support@test.com',
+          x: {
+            logo: 'http://logo.com/img.png'
+          }
         }
       end
     end
@@ -130,6 +134,43 @@ describe 'Default API' do
 
     it 'documents the contact email' do
       expect(subject['contact']['email']).to eql('support@test.com')
+    end
+
+    it 'documents the extension field' do
+      expect(subject['x-logo']).to eql('http://logo.com/img.png')
+    end
+  end
+
+  context 'with tags' do
+    def app
+      Class.new(Grape::API) do
+        format :json
+        desc 'This gets something.'
+        get '/something' do
+          { bla: 'something' }
+        end
+        get '/somethingelse' do
+          { bla: 'somethingelse' }
+        end
+
+        add_swagger_documentation tags: [
+          { name: 'something', description: 'customized description' }
+        ]
+      end
+    end
+
+    subject do
+      get '/swagger_doc'
+      JSON.parse(last_response.body)
+    end
+
+    it 'documents the customized tag' do
+      expect(subject['tags']).to eql(
+        [
+          { 'name' => 'somethingelse', 'description' => 'Operations about somethingelses' },
+          { 'name' => 'something', 'description' => 'customized description' }
+        ]
+      )
     end
   end
 end

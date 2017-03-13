@@ -202,6 +202,7 @@ end
 * [token_owner](#token_owner)
 * [security_definitions](#security_definitions)
 * [models](#models)
+* [tags](#tags)
 * [hide_documentation_path](#hide_documentation_path)
 * [info](#info)
 
@@ -329,6 +330,18 @@ add_swagger_documentation \
    ]
 ```
 
+<a name="tags" />
+### tags:
+A list of tags to document.  By default tags are automatically generated
+for endpoints based on route names.
+
+```ruby
+add_swagger_documentation \
+  tags: [
+    { name: 'widgets', description: 'A description of widgets' }
+  ]
+```
+
 <a name="hide_documentation_path" />
 #### hide_documentation_path: (default: `true`)
 ```ruby
@@ -397,6 +410,7 @@ add_swagger_documentation \
 * [Setting a Swagger default value](#default-value)
 * [Response documentation](#response)
 * [Changing default status codes](#change-status)
+* [File response](#file-response)
 * [Extensions](#extensions)
 
 
@@ -428,6 +442,12 @@ You can hide an endpoint by adding ```hidden: true``` in the description of the 
 
 ```ruby
 desc 'Hide this endpoint', hidden: true
+```
+
+Or by adding ```hidden: true``` on the verb method of the endpoint, such as `get`, `post` and `put`:
+
+```ruby
+get '/kittens', hidden: true do
 ```
 
 Endpoints can be conditionally hidden by providing a callable object such as a lambda which evaluates to the desired
@@ -826,15 +846,55 @@ end
 },
 ```
 
+<a name="file-response" />
+#### File response
+
+Set `success` to `File` and sets also produces. If produces wasn't set, it defaults to `application/octet-stream`.
+```ruby
+desc 'Get a file',
+    success: File
+get do
+  # your file reponse
+end
+…
+```
+
+```json
+"produces": [
+  "application/octet-stream"
+],
+"responses": {
+  "200": {
+    "description": "Get a file",
+    "schema": {
+      "type": "file"
+    }
+  }
+}
+```
 
 <a name="extensions" />
 #### Extensions
 
 Swagger spec2.0 supports extensions on different levels, for the moment,
-the documentation on `verb`, `path` and `definition` level would be supported.
+the documentation on `info`, `verb`, `path` and `definition` level would be supported.
 The documented key would be generated from the `x` + `-` + key of the submitted hash,
 for possibilities refer to the [extensions spec](spec/lib/extensions_spec.rb).
 To get an overview *how* the extensions would be defined on grape level, see the following examples:
+
+- `info` extension, add a `x` key to the `info` hash when calling ```add_swagger_documentation```:
+```ruby
+  add_swagger_documentation \
+    info: {
+      x: { some: 'stuff' }
+    }
+```
+this would generate:
+```json
+"info":{
+  "x-some":"stuff"
+}
+```
 
 - `verb` extension, add a `x` key to the `desc` hash:
 ```ruby
@@ -1079,13 +1139,13 @@ role - only admins can see this endpoint.
 <a name="md_usage" />
 ## Markdown in Detail (deprecated)
 
-Usage of option `markdown` won't no longer be supported,
+Usage of option `markdown` will no longer be supported,
 cause OAPI accepts [GFM](https://help.github.com/articles/github-flavored-markdown) and plain text.
 (see: [description of `Info`](https://github.com/OAI/OpenAPI-Specification/blob/OpenAPI.next/versions/2.0.md#info-object))
 
 
 <a="example" />
-## Example
+## Examples
 
 Go into example directory and run it: `$ bundle exec rackup`
 go to: `http://localhost:9292/swagger_doc` to get it
@@ -1106,9 +1166,7 @@ class NamespaceApi < Grape::API
     desc 'Document root'
     get '/' do
     end
-  end
 
-  namespace :hudson do
     desc 'This gets something.',
       notes: '_test_'
 
@@ -1117,12 +1175,12 @@ class NamespaceApi < Grape::API
     end
   end
 
-  namespace :colorado do
-    desc 'This gets something for URL using - separator.',
-      notes: '_test_'
-
-    get '/simple-test' do
-      { bla: 'something' }
+  namespace :download do
+    desc 'download files',
+         success: File,
+         produces: ['text/csv']
+    get ':id' do
+      # file response
     end
   end
 end

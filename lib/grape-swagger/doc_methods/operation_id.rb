@@ -1,24 +1,21 @@
+# frozen_string_literal: true
 module GrapeSwagger
   module DocMethods
     class OperationId
       class << self
         def build(route, path = nil)
           if route.options[:nickname]
-            operation_id = route.options[:nickname]
+            route.options[:nickname]
           else
             verb = route.request_method.to_s.downcase
-
             operation = manipulate(path) unless path.nil?
-
-            operation_id = "#{verb}#{operation}"
+            "#{verb}#{operation}"
           end
-
-          operation_id
         end
 
         def manipulate(path)
           operation = path.split('/').map(&:capitalize).join
-          operation.gsub!(/\-(\w)/, &:upcase).delete!('-') if operation.include?('-')
+          operation.gsub!(/\-(\w)/, &:upcase).delete!('-') if operation[/\-(\w)/]
           operation.gsub!(/\_(\w)/, &:upcase).delete!('_') if operation.include?('_')
           operation.gsub!(/\.(\w)/, &:upcase).delete!('.') if operation.include?('.')
           if path.include?('{')

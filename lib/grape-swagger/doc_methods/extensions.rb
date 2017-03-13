@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module GrapeSwagger
   module DocMethods
     class Extensions
@@ -11,6 +12,10 @@ module GrapeSwagger
           settings = route.settings
           add_extensions_to_path(settings, path) if settings && extended?(settings, :x_path)
           add_extensions_to_definition(settings, path, definitions) if settings && extended?(settings, :x_def)
+        end
+
+        def add_extensions_to_info(settings, info)
+          add_extension_to(info, extension(settings)) if extended?(settings, :x)
         end
 
         def add_extensions_to_path(settings, path)

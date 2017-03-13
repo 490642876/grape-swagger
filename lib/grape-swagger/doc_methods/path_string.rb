@@ -1,9 +1,10 @@
+# frozen_string_literal: true
 module GrapeSwagger
   module DocMethods
     class PathString
       class << self
         def build(route, options = {})
-          path = route.path
+          path = route.path.dup
           # always removing format
           path.sub!(/\(\.\w+?\)$/, '')
           path.sub!('(.:format)', '')
