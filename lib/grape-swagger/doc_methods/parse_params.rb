@@ -79,7 +79,7 @@ module GrapeSwagger
           end
           array_items[:format] = @parsed_param.delete(:format) if @parsed_param[:format]
 
-          @parsed_param[:in] = param_type || 'formData'
+          @parsed_param[:in] = param_type || 'body'
           @parsed_param[:items] = array_items
           @parsed_param[:type] = 'array'
           @parsed_param[:collectionFormat] = collection_format if DataType.collections.include?(collection_format)
@@ -92,7 +92,7 @@ module GrapeSwagger
           elsif param_type
             param_type
           elsif %w(POST PUT PATCH).include?(value_type[:method])
-            DataType.request_primitive?(value_type[:data_type]) ? 'formData' : 'body'
+            'body'
           else
             'query'
           end
