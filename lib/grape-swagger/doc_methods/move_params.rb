@@ -15,7 +15,7 @@ module GrapeSwagger
 
           params_to_move = movable_params(params)
 
-          #return (params + correct_array_param(params_to_move)) if should_correct_array?(params_to_move)
+          return (params + correct_array_param(params_to_move)) if should_correct_array?(params_to_move)
 
           params << parent_definition_of_params(params_to_move, path, route)
 
